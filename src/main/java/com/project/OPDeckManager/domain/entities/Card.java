@@ -1,10 +1,13 @@
 package com.project.OPDeckManager.domain.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,6 +29,8 @@ import java.util.Set;
 @DiscriminatorValue("NORMAL")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(exclude = {"cardColors", "deckCards"})
+@ToString(exclude = {"cardColors", "deckCards"})
 public class Card {
 
     @Id
@@ -90,9 +95,11 @@ public class Card {
     @Column(name = "imported_at")
     private LocalDateTime importedAt;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<CardColor> cardColors = new HashSet<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<DeckCard> deckCards = new HashSet<>();
 }

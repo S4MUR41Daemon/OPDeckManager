@@ -1,9 +1,12 @@
 package com.project.OPDeckManager.domain.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -18,6 +21,8 @@ import java.util.Set;
 @Table(name = "colors")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(exclude = {"cardColors"})
+@ToString(exclude = {"cardColors"})
 public class Color {
 
     @Id
@@ -28,6 +33,7 @@ public class Color {
     @Column(name = "name", unique = true)
     private String name;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "color", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<CardColor> cardColors = new HashSet<>();
 

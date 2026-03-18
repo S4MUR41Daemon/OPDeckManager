@@ -5,65 +5,69 @@ import lombok.Data;
 
 /**
  * DTO para mapear la respuesta de la API de One Piece TCG
- * Endpoint: https://optcgapi.com/api/sets/card/{card_id}/
+ * Endpoint: https://optcg-api.ryanmichaelhirst.us/api/v1/cards
+ * 
+ * Nueva estructura de la API (2026):
+ * - id: identificador único
+ * - code: código de la carta (ej. EB01-001)
+ * - rarity: rareza (L, SR, R, C, etc.)
+ * - type: tipo (LEADER, CHARACTER, EVENT, STAGE)
+ * - name: nombre
+ * - cost: coste
+ * - attribute: atributo (Slash, Ranged, Strike, Special)
+ * - power: poder
+ * - counter: counter
+ * - color: color (ej. "Red/Green")
+ * - class: clase/subtipo
+ * - effect: texto de la carta
+ * - set: nombre del set
+ * - image: URL de la imagen
  */
 @Data
 public class CardApiDTO {
 
-    @JsonProperty("card_set_id")
-    private String cardSetId;
+    @JsonProperty("id")
+    private String id;
 
-    @JsonProperty("card_name")
-    private String cardName;
-
-    @JsonProperty("card_type")
-    private String cardType;
-
-    @JsonProperty("card_color")
-    private String cardColor;
-
-    @JsonProperty("card_cost")
-    private Integer cardCost;
-
-    @JsonProperty("card_power")
-    private String cardPower;
-
-    @JsonProperty("life")
-    private String life;
-
-    @JsonProperty("counter_amount")
-    private Integer counterAmount;
-
-    @JsonProperty("attribute")
-    private String attribute;
-
-    @JsonProperty("sub_types")
-    private String subTypes;
-
-    @JsonProperty("card_text")
-    private String cardText;
+    @JsonProperty("code")
+    private String code;
 
     @JsonProperty("rarity")
     private String rarity;
 
-    @JsonProperty("set_id")
-    private String setId;
+    @JsonProperty("type")
+    private String type;
 
-    @JsonProperty("set_name")
+    @JsonProperty("name")
+    private String name;
+
+    @JsonProperty("cost")
+    private Integer cost;
+
+    @JsonProperty("attribute")
+    private String attribute;
+
+    @JsonProperty("power")
+    private Integer power;
+
+    @JsonProperty("counter")
+    private Integer counter;
+
+    @JsonProperty("color")
+    private String color;
+
+    @JsonProperty("class")
+    private String cardClass;
+
+    @JsonProperty("effect")
+    private String effect;
+
+    @JsonProperty("set")
     private String setName;
 
-    @JsonProperty("card_image")
-    private String cardImage;
+    @JsonProperty("image")
+    private String imageUrl;
 
-    @JsonProperty("card_image_id")
-    private String cardImageId;
-
-    @JsonProperty("market_price")
-    private Double marketPrice;
-
-    @JsonProperty("inventory_price")
-    private Double inventoryPrice;
-
-    @JsonProperty("date_scraped")
-    private String dateScraped;
+    @JsonProperty("_tag")
+    private String tag;
 }

@@ -83,3 +83,6 @@ PRÓXIMOS PASOS SUGERIDOS
 5. Migrar a MySQL/PostgreSQL en producción
 
 ================================================================================
+
+
+usar -Uri "http://localhost:8080/api/import/all" -Method POST en terminal para importarlo todo a la bbdd

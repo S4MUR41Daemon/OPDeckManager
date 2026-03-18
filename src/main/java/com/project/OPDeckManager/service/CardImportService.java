@@ -1,6 +1,7 @@
 package com.project.OPDeckManager.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.OPDeckManager.domain.entities.*;
 import com.project.OPDeckManager.service.dto.CardApiDTO;
@@ -11,17 +12,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class used to import cards from the API and to save them in the database. It fetches the cards from the API,
  * maps them to the Card entity and saves them in the database.
+ *
+ * API actualizada: https://optcg-api.ryanmichaelhirst.us/api/v1
  *
  * @author dmaicas
  */
@@ -30,7 +34,10 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CardImportService {
 
-    private static final String API_BASE_URL = "https://optcgapi.com/api";
+    private static final String API_BASE_URL = "https://optcg-api.ryanmichaelhirst.us/api/v1";
+    
+    // Lista de sets actualizada (la nueva API usa códigos diferentes)
+    // La nueva API devuelve el código del set en el campo "set" y el code de la carta contiene el prefijo
     private static final List<String> SET_IDS = List.of(
         "OP01", "OP02", "OP03", "OP04", "OP05", "OP06", "OP07", "OP08",
         "OP09", "OP10", "OP11", "OP12", "OP13", "OP14", "OP15",
@@ -51,111 +58,224 @@ public class CardImportService {
 
         int totalImported = 0;
 
-        for (String setId : SET_IDS) {
-            try {
-                int imported = importSet(setId);
-                totalImported += imported;
-                log.info("Set {} importado: {} cartas", setId, imported);
-            } catch (Exception e) {
-                log.error("Error importando set {}: {}", setId, e.getMessage(), e);
-            }
+        // La nueva API no tiene filtro por set, así que importamos todas las cartas de una vez
+        try {
+            totalImported = importAllCardsFromApi();
+        } catch (Exception e) {
+            log.error("Error importando todas las cartas: {}", e.getMessage(), e);
         }
 
         log.info("Importación completada. Total de cartas importadas: {}", totalImported);
     }
 
+    /**
+     * Importa todas las cartas desde la nueva API (que no tiene filtro por set)
+     */
     @Transactional
-    public int importSet(String setId) throws IOException, InterruptedException {
-        List<CardApiDTO> apiCards = fetchCardsFromSet(setId);
-
+    public int importAllCardsFromApi() throws IOException, InterruptedException {
+        int page = 1;
+        int totalPages = 1;
         int imported = 0;
-        for (CardApiDTO apiCard : apiCards) {
-            if (saveCard(apiCard)) {
-                imported++;
+        int skipped = 0;
+        Set<String> seenCodes = new HashSet<>();
+
+        while (page <= totalPages) {
+            String url = API_BASE_URL + "/cards?page=" + page;
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                log.warn("Error fetching pagina {}: HTTP {}", page, response.statusCode());
+                break;
             }
+
+            JsonNode rootNode = objectMapper.readTree(response.body());
+            
+            if (page == 1) {
+                totalPages = rootNode.path("total_pages").asInt(1);
+                int totalCards = rootNode.path("total").asInt(0);
+                log.info("API reporta {} cartas en {} paginas", totalCards, totalPages);
+            }
+
+            JsonNode dataNode = rootNode.get("data");
+            if (dataNode == null || !dataNode.isArray() || dataNode.isEmpty()) {
+                break;
+            }
+
+            List<CardApiDTO> cardsPage = objectMapper.readValue(
+                dataNode.toString(), 
+                new TypeReference<List<CardApiDTO>>() {}
+            );
+
+            for (CardApiDTO apiCard : cardsPage) {
+                String code = apiCard.getCode();
+                if (code == null || seenCodes.contains(code)) {
+                    skipped++;
+                    continue;
+                }
+                seenCodes.add(code);
+                if (saveCard(apiCard)) {
+                    imported++;
+                }
+            }
+
+            log.info("Pagina {}/{} procesada (importadas: {}, duplicadas/saltadas: {})", page, totalPages, imported, skipped);
+            page++;
+            
+            Thread.sleep(200);
         }
 
         return imported;
     }
 
-    private List<CardApiDTO> fetchCardsFromSet(String setId) throws IOException, InterruptedException {
-        String url = API_BASE_URL + "/sets/filtered/?set_id=" + setId;
+    @Transactional
+    public int importSet(String setId) throws IOException, InterruptedException {
+        log.info("Importando cartas del set {}...", setId);
+        
+        int page = 1;
+        int totalPages = 1;
+        int imported = 0;
+        Set<String> seenCodes = new HashSet<>();
 
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("Accept", "application/json")
-            .GET()
-            .build();
+        while (page <= totalPages) {
+            String url = API_BASE_URL + "/cards?page=" + page;
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Accept", "application/json")
+                .GET()
+                .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() != 200) {
-            log.warn("Error fetching set {}: HTTP {}", setId, response.statusCode());
-            return Collections.emptyList();
+            if (response.statusCode() != 200) {
+                log.warn("Error fetching pagina {}: HTTP {}", page, response.statusCode());
+                break;
+            }
+
+            JsonNode rootNode = objectMapper.readTree(response.body());
+            
+            if (page == 1) {
+                totalPages = rootNode.path("total_pages").asInt(1);
+            }
+
+            JsonNode dataNode = rootNode.get("data");
+            if (dataNode == null || !dataNode.isArray() || dataNode.isEmpty()) {
+                break;
+            }
+
+            List<CardApiDTO> cardsPage = objectMapper.readValue(
+                dataNode.toString(), 
+                new TypeReference<List<CardApiDTO>>() {}
+            );
+
+            for (CardApiDTO card : cardsPage) {
+                String code = card.getCode();
+                if (code != null && code.startsWith(setId + "-") && !seenCodes.contains(code)) {
+                    seenCodes.add(code);
+                    if (saveCard(card)) {
+                        imported++;
+                    }
+                }
+            }
+
+            log.info("Pagina {}/{} procesada para set {} (importadas hasta ahora: {})", page, totalPages, setId, imported);
+            page++;
+            Thread.sleep(200);
         }
 
-        return objectMapper.readValue(response.body(), new TypeReference<List<CardApiDTO>>() {});
+        return imported;
     }
 
     private boolean saveCard(CardApiDTO apiCard) {
         try {
-            Card existingCard = entityManager.find(Card.class, apiCard.getCardSetId());
-            if (existingCard != null) {
-                log.debug("Carta {} ya existe, saltando...", apiCard.getCardSetId());
+            // Usar el código de la carta como ID único (ej. EB01-001)
+            String cardSetId = apiCard.getCode();
+            if (cardSetId == null || cardSetId.trim().isEmpty()) {
+                log.warn("Carta sin código, saltando...");
                 return false;
             }
 
-            Card card = new Card();
-            card.setCardSetId(apiCard.getCardSetId());
-            card.setName(apiCard.getCardName());
-            card.setType(apiCard.getCardType());
-            card.setCost(apiCard.getCardCost());
-
-            if (apiCard.getCardPower() != null && !apiCard.getCardPower().isEmpty()) {
-                try {
-                    card.setPower(Integer.parseInt(apiCard.getCardPower()));
-                } catch (NumberFormatException e) {
-                    log.debug("Power no numérico para {}: {}", apiCard.getCardSetId(), apiCard.getCardPower());
-                }
+            Card existingCard = entityManager.find(Card.class, cardSetId);
+            if (existingCard != null) {
+                log.debug("Carta {} ya existe, saltando...", cardSetId);
+                return false;
             }
 
-            if (apiCard.getLife() != null && !apiCard.getLife().isEmpty()) {
-                try {
-                    card.setLife(Integer.parseInt(apiCard.getLife()));
-                } catch (NumberFormatException e) {
-                    log.debug("Life no numérico para {}: {}", apiCard.getCardSetId(), apiCard.getLife());
-                }
+            boolean isLeader = "LEADER".equalsIgnoreCase(apiCard.getType());
+
+            Card card;
+            if (isLeader) {
+                Leader leader = new Leader();
+                leader.setLeaderLife(apiCard.getCost() != null ? String.valueOf(apiCard.getCost()) : null);
+                card = leader;
+            } else {
+                card = new Card();
             }
 
-            card.setCounterAmount(apiCard.getCounterAmount());
+            card.setCardSetId(cardSetId);
+            card.setName(apiCard.getName());
+            card.setType(apiCard.getType());
+            card.setPower(apiCard.getPower());
+
+            if (!isLeader) {
+                card.setCost(apiCard.getCost());
+            }
+            
+            card.setCounterAmount(apiCard.getCounter());
             card.setAttribute(apiCard.getAttribute());
-            card.setSubTypes(apiCard.getSubTypes());
-            card.setCardText(apiCard.getCardText());
+            card.setSubTypes(apiCard.getCardClass());
+            card.setCardText(apiCard.getEffect());
             card.setRarity(apiCard.getRarity());
-            card.setSetId(apiCard.getSetId());
+            
+            String setId = extractSetId(apiCard.getCode());
+            card.setSetId(setId);
+            
             card.setSetName(apiCard.getSetName());
-            card.setImageUrl(apiCard.getCardImage());
-            card.setImageId(apiCard.getCardImageId());
-
-            if (apiCard.getMarketPrice() != null) {
-                card.setMarketPrice(BigDecimal.valueOf(apiCard.getMarketPrice()));
-            }
-            if (apiCard.getInventoryPrice() != null) {
-                card.setInventoryPrice(BigDecimal.valueOf(apiCard.getInventoryPrice()));
-            }
-
+            card.setImageUrl(apiCard.getImageUrl());
+            card.setImageId(apiCard.getId());
             card.setImportedAt(LocalDateTime.now());
 
             entityManager.persist(card);
 
-            saveCardColors(card, apiCard.getCardColor());
+            saveCardColors(card, apiCard.getColor());
 
             return true;
 
         } catch (Exception e) {
-            log.error("Error guardando carta {}: {}", apiCard.getCardSetId(), e.getMessage(), e);
+            log.error("Error guardando carta {}: {}", apiCard.getCode(), e.getMessage(), e);
             return false;
         }
+    }
+
+    /**
+     * Extrae el ID del set desde el código de la carta
+     * Ej: EB01-001 -> EB01, OP05-023 -> OP05
+     */
+    private String extractSetId(String cardCode) {
+        if (cardCode == null) return "";
+        
+        // Patrón para extraer letras y números iniciales antes del guion
+        Pattern pattern = Pattern.compile("^([A-Z]{2}\\d+)-");
+        Matcher matcher = pattern.matcher(cardCode);
+        
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        
+        // Para casos especiales, devolver todo hasta el primer guion
+        int dashIndex = cardCode.indexOf('-');
+        if (dashIndex > 0) {
+            return cardCode.substring(0, dashIndex);
+        }
+        
+        return cardCode;
     }
 
     private void saveCardColors(Card card, String colorString) {
@@ -163,14 +283,16 @@ public class CardImportService {
             return;
         }
 
-        String[] colorNames = colorString.trim().split("\\s+");
+        // La nueva API usa formato "Red/Green", así que separamos por /
+        String[] colorNames = colorString.split("/");
 
         for (String colorName : colorNames) {
-            if (colorName.trim().isEmpty()) continue;
+            String trimmedName = colorName.trim();
+            if (trimmedName.isEmpty()) continue;
 
-            Color color = findColorByName(colorName.trim());
+            Color color = findColorByName(trimmedName);
             if (color == null) {
-                log.warn("Color '{}' no encontrado en BD, saltando...", colorName);
+                log.warn("Color '{}' no encontrado en BD, saltando...", trimmedName);
                 continue;
             }
 

@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -19,6 +21,8 @@ import java.util.Set;
 @Table(name = "decks")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(exclude = {"deckCards"})
+@ToString(exclude = {"deckCards"})
 public class Deck {
 
     @Id
