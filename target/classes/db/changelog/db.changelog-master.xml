@@ -20,4 +20,7 @@
     <!-- Tabla intermedia deck-carta (con cantidad de copias) -->
     <include file="db/changelog/changes/005-create-deck-cards-table.xml"/>
 
+    <!-- Tabla de inventario del usuario -->
+    <include file="db/changelog/changes/006-create-user-inventory-table.xml"/>
+
 </databaseChangeLog>

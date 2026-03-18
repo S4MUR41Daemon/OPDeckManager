@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="006" author="dmaicas">
+        <comment>Tabla de inventario del usuario para trackear cartas que posee</comment>
+
+        <createTable tableName="user_inventory">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="card_id" type="varchar(50)">
+                <constraints nullable="false" foreignKeyName="fk_user_inventory_card" references="cards(card_set_id)"/>
+            </column>
+
+            <column name="quantity" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="purchase_price" type="decimal(10,2)"/>
+
+            <column name="purchase_date" type="datetime"/>
+
+            <column name="notes" type="varchar(500)"/>
+        </createTable>
+
+        <createIndex tableName="user_inventory" indexName="idx_user_inventory_card_id">
+            <column name="card_id"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

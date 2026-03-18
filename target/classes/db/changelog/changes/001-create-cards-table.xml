@@ -13,7 +13,12 @@
             <column name="card_set_id" type="varchar(50)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            
+
+            <!-- Discriminator para herencia SINGLE_TABLE (NORMAL, LEADER) -->
+            <column name="card_type" type="varchar(20)" defaultValue="NORMAL">
+                <constraints nullable="false"/>
+            </column>
+
             <!-- Nombre de la carta -->
             <column name="name" type="varchar(255)">
                 <constraints nullable="false"/>
@@ -32,7 +37,10 @@
             
             <!-- Vida (solo para Leaders) -->
             <column name="life" type="integer"/>
-            
+
+            <!-- Vida del leader (solo para cartas Leader) -->
+            <column name="leader_life" type="varchar(50)"/>
+
             <!-- Counter (solo para Characters) -->
             <column name="counter_amount" type="integer"/>
             

@@ -153,7 +153,7 @@ public class DeckService {
     private void recalculateTotalCards(Long deckId) {
         List<DeckCard> deckCards = deckCardRepository.findByDeckId(deckId);
         int total = deckCards.stream()
-                .mapToInt(DeckCard::getQuantity)
+                .mapToInt(DeckCard::getCopies)
                 .sum();
 
         deckRepository.findById(deckId).ifPresent(deck -> {

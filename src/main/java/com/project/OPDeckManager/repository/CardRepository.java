@@ -12,7 +12,8 @@ import java.util.Optional;
 @Repository
 public interface CardRepository extends JpaRepository<Card, String> {
 
-    List<Card> findByIdIn(List<String> ids);
+    @Query("SELECT c FROM Card c WHERE c.cardSetId IN :ids")
+    List<Card> findByIdIn(@Param("ids") List<String> ids);
 
     List<Card> findBySetId(String setId);
 

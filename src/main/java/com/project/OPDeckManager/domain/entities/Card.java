@@ -13,13 +13,17 @@ import java.util.Set;
 
 
 /**
- * Class that represents a card of One Piece TCG imported from the API. It is related with DeckCard and CardColor
+ * Class that represents a card of One Piece TCG imported from the API. It is related with DeckCard and CardColor.
+ * Uses SINGLE_TABLE inheritance strategy to support Leader subclass.
  *
  * @author dmaicas
  */
 
 @Entity
 @Table(name = "cards")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "card_type", discriminatorType = DiscriminatorType.STRING)
+@DiscriminatorValue("NORMAL")
 @Data
 @NoArgsConstructor
 public class Card {
