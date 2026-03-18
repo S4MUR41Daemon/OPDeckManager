@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="003" author="dmaicas">
+        <comment>Tabla intermedia para relación muchos-a-muchos entre cartas y colores</comment>
+        
+        <createTable tableName="card_colors">
+            <!-- Referencia a la carta -->
+            <column name="card_set_id" type="varchar(50)">
+                <constraints nullable="false" foreignKeyName="fk_card_colors_card" references="cards(card_set_id)" deleteCascade="true"/>
+            </column>
+            
+            <!-- Referencia al color -->
+            <column name="color_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_card_colors_color" references="colors(id)" deleteCascade="true"/>
+            </column>
+        </createTable>
+        
+        <!-- Clave primaria compuesta -->
+        <addPrimaryKey tableName="card_colors" columnNames="card_set_id, color_id" constraintName="pk_card_colors"/>
+        
+        <!-- Índice para buscar cartas por color -->
+        <createIndex tableName="card_colors" indexName="idx_card_colors_color_id">
+            <column name="color_id"/>
+        </createIndex>
+        
+    </changeSet>
+
+</databaseChangeLog>

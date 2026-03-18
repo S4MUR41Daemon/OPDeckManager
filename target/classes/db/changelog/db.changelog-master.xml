@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Tabla de cartas importadas desde la API -->
+    <include file="db/changelog/changes/001-create-cards-table.xml"/>
+    
+    <!-- Tabla de colores (normalizada) -->
+    <include file="db/changelog/changes/002-create-colors-table.xml"/>
+    
+    <!-- Tabla intermedia carta-color -->
+    <include file="db/changelog/changes/003-create-card-colors-table.xml"/>
+    
+    <!-- Tabla de decks -->
+    <include file="db/changelog/changes/004-create-decks-table.xml"/>
+    
+    <!-- Tabla intermedia deck-carta (con cantidad de copias) -->
+    <include file="db/changelog/changes/005-create-deck-cards-table.xml"/>
+
+</databaseChangeLog>

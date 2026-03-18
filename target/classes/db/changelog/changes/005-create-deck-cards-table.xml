@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="005" author="dmaicas">
+        <comment>Tabla intermedia deck-carta con cantidad de copias (máximo 4 por carta)</comment>
+        
+        <createTable tableName="deck_cards">
+            <!-- Identificador único -->
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <!-- Referencia al deck -->
+            <column name="deck_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_deck_cards_deck" references="decks(id)" deleteCascade="true"/>
+            </column>
+            
+            <!-- Referencia a la carta -->
+            <column name="card_set_id" type="varchar(50)">
+                <constraints nullable="false" foreignKeyName="fk_deck_cards_card" references="cards(card_set_id)" deleteCascade="true"/>
+            </column>
+            
+            <!-- Cantidad de copias de esta carta en este deck (1-4) -->
+            <column name="copies" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <!-- Índice para buscar cartas de un deck -->
+        <createIndex tableName="deck_cards" indexName="idx_deck_cards_deck_id">
+            <column name="deck_id"/>
+        </createIndex>
+        
+        <!-- Índice para buscar decks que contienen una carta -->
+        <createIndex tableName="deck_cards" indexName="idx_deck_cards_card_id">
+            <column name="card_set_id"/>
+        </createIndex>
+        
+        <!-- Restricción única: no puede haber dos entradas iguales de la misma carta en el mismo deck -->
+        <addUniqueConstraint tableName="deck_cards" columnNames="deck_id, card_set_id" constraintName="uq_deck_cards_unique"/>
+        
+        <!-- Restricción check: las copias deben estar entre 1 y 4 -->
+        <addCheckConstraint tableName="deck_cards" constraintName="chk_deck_cards_copies">
+            copies >= 1 AND copies <= 4
+        </addCheckConstraint>
+        
+    </changeSet>
+
+</databaseChangeLog>
