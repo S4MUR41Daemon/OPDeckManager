@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="004" author="dmaicas">
+        <comment>Tabla de decks/mazos creados por los usuarios</comment>
+        
+        <createTable tableName="decks">
+            <!-- Identificador único del deck -->
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <!-- Nombre del deck -->
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- Descripción del deck -->
+            <column name="description" type="varchar(1000)"/>
+            
+            <!-- Fecha de creación -->
+            <column name="created_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- Fecha de última modificación -->
+            <column name="updated_at" type="datetime"/>
+            
+            <!-- Total de cartas en el deck (debe ser 60) -->
+            <column name="total_cards" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <!-- Índice para búsqueda por nombre -->
+        <createIndex tableName="decks" indexName="idx_decks_name">
+            <column name="name"/>
+        </createIndex>
+        
+    </changeSet>
+
+</databaseChangeLog>

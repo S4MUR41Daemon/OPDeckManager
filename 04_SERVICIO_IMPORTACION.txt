@@ -1,0 +1,186 @@
+================================================================================
+                    SERVICIO DE IMPORTACIÓN (CardImportService)
+                    (src/main/java/.../service/)
+================================================================================
+
+PROPÓSITO
+---------
+Importar cartas desde la API externa https://optcgapi.com y guardarlas
+en la base de datos local.
+
+--------------------------------------------------------------------------------
+
+CLASES INVOLUCRADAS
+-------------------
+
+1. CardImportService.java
+   Servicio principal que orquesta la importación.
+
+2. CardApiDTO.java
+   Objeto de transferencia que mapea el JSON de la API.
+   
+   Campos del DTO (mapeo con @JsonProperty):
+   - card_set_id → cardSetId
+   - card_name → cardName
+   - card_type → cardType
+   - card_color → cardColor (ej: "Red Blue")
+   - card_cost → cardCost
+   - card_power → cardPower (String, hay que parsear)
+   - life → life (String, hay que parsear)
+   - counter_amount → counterAmount
+   - attribute → attribute
+   - sub_types → subTypes
+   - card_text → cardText
+   - rarity → rarity
+   - set_id → setId
+   - set_name → setName
+   - card_image → cardImage
+   - card_image_id → cardImageId
+   - market_price → marketPrice
+   - inventory_price → inventoryPrice
+   - date_scraped → dateScraped
+
+--------------------------------------------------------------------------------
+
+MÉTODO PRINCIPAL: importAllCards()
+----------------------------------
+@Transactional
+public void importAllCards()
+
+Flujo:
+1. Log de inicio
+2. Itera sobre SET_IDS (lista de 49 sets: OP01-OP15, EB01-EB04, ST01-ST29)
+3. Para cada set, llama a importSet(setId)
+4. Acumula el total importado
+5. Log de finalización
+
+Excepciones:
+- Captura errores por set para no detener todo el proceso
+- Log de errores con stack trace
+
+--------------------------------------------------------------------------------
+
+MÉTODO: importSet(String setId)
+-------------------------------
+@Transactional
+public int importSet(String setId)
+
+Flujo:
+1. Llama a fetchCardsFromSet(setId)
+2. Itera sobre las cartas recibidas
+3. Llama a saveCard(apiCard) para cada una
+4. Retorna cuántas se importaron
+
+--------------------------------------------------------------------------------
+
+MÉTODO: fetchCardsFromSet(String setId)
+---------------------------------------
+private List<CardApiDTO> fetchCardsFromSet(String setId)
+
+HTTP Request:
+  GET https://optcgapi.com/api/sets/filtered/?set_id={setId}
+  Accept: application/json
+
+Flujo:
+1. Construye URL con el setId
+2. Crea HttpRequest con HttpClient
+3. Envía petición y recibe respuesta
+4. Si HTTP 200, parsea JSON con Jackson ObjectMapper
+5. Si error, retorna lista vacía
+
+--------------------------------------------------------------------------------
+
+MÉTODO: saveCard(CardApiDTO apiCard)
+------------------------------------
+private boolean saveCard(CardApiDTO apiCard)
+
+Flujo:
+1. Verifica si la carta ya existe (entityManager.find)
+2. Si existe → retorna false (ya importada)
+3. Si no existe:
+   a. Crea nueva entidad Card
+   b. Copia campos del DTO a la entidad
+   c. Parsea power y life (String → Integer)
+   d. Convierte precios a BigDecimal
+   e. Setea importedAt = LocalDateTime.now()
+   f. Persiste con entityManager.persist(card)
+   g. Llama a saveCardColors(card, apiCard.getCardColor())
+4. Retorna true si éxito
+
+Manejo de errores:
+- Try-catch general que loggea y retorna false
+
+--------------------------------------------------------------------------------
+
+MÉTODO: saveCardColors(Card card, String colorString)
+-----------------------------------------------------
+private void saveCardColors(Card card, String colorString)
+
+Flujo:
+1. Si colorString es null o vacío → retorna (cartas sin color)
+2. Split por espacios: "Red Blue" → ["Red", "Blue"]
+3. Para cada color:
+   a. Busca el color en BD (findColorByName)
+   b. Si no existe → log warning y continúa
+   c. Crea CardColor con CardColorId compuesto
+   d. Persiste CardColor
+   e. Añade a card.getCardColors()
+
+--------------------------------------------------------------------------------
+
+MÉTODO: findColorByName(String colorName)
+-----------------------------------------
+private Color findColorByName(String colorName)
+
+Flujo:
+1. Query JPQL: SELECT c FROM Color c WHERE c.name = :name
+2. Si encuentra → retorna el Color
+3. Si no → retorna null
+
+NOTA: Los colores se crean en Liquibase (002-create-colors-table.xml)
+      Si la API devuelve un color no estándar, se salta con warning.
+
+--------------------------------------------------------------------------------
+
+CONSIDERACIONES IMPORTANTES
+---------------------------
+
+1. @Transactional
+   - Ambos métodos principales tienen @Transactional
+   - Si hay error, se hace rollback automático
+   - Evita datos a medias en la BD
+
+2. EntityManager vs Repository
+   - Usa EntityManager directamente para control fino
+   - Podría usarse Repository pero es más complejo para bulk insert
+
+3. Idempotencia
+   - El servicio verifica si la carta existe antes de insertar
+   - Se puede llamar múltiples veces sin duplicar
+
+4. Rendimiento
+   - 49 sets × ~100 cartas/set = ~5000 peticiones HTTP
+   - Puede tardar varios minutos
+   - Mejora futura: Bulk fetch o cache
+
+5. Errores comunes
+   - API cae → log error, continúa con siguiente set
+   - Color no encontrado → log warning, guarda carta sin color
+   - Número no parseable → log debug, guarda como null
+
+--------------------------------------------------------------------------------
+
+EJEMPLO DE USO
+--------------
+Desde controller o consola:
+
+  @Autowired
+  private CardImportService importService;
+  
+  // Importar todo
+  importService.importAllCards();
+  
+  // Importar solo un set
+  importService.importSet("OP01");
+
+================================================================================

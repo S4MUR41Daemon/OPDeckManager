@@ -1,0 +1,135 @@
+================================================================================
+                         LIQUIBASE - MIGRACIONES DE BD
+                         (src/main/resources/db/changelog/)
+================================================================================
+
+¿QUÉ ES LIQUIBASE?
+------------------
+Liquibase es una herramienta de control de versiones para bases de datos.
+Permite definir cambios en la estructura de la BD mediante archivos XML
+(changelogs) que se ejecutan en orden.
+
+VENTAJAS:
+- Historial de cambios en la BD
+- Reproducible en cualquier entorno
+- Evita errores manuales
+- Integrado con Spring Boot
+
+--------------------------------------------------------------------------------
+
+ARCHIVO MAESTRO: db.changelog-master.xml
+----------------------------------------
+Es el "índice" que incluye todos los changelogs en orden de ejecución.
+
+Contenido actual:
+  <include file="db/changelog/changes/001-create-cards-table.xml"/>
+  <include file="db/changelog/changes/002-create-colors-table.xml"/>
+  <include file="db/changelog/changes/003-create-card-colors-table.xml"/>
+  <include file="db/changelog/changes/004-create-decks-table.xml"/>
+  <include file="db/changelog/changes/005-create-deck-cards-table.xml"/>
+
+--------------------------------------------------------------------------------
+
+CHANGELOG 001: create-cards-table.xml
+-------------------------------------
+Crea la tabla principal de CARTAS.
+
+Columnas clave:
+- card_set_id: VARCHAR(50) PRIMARY KEY
+- name: VARCHAR(255) NOT NULL
+- type: VARCHAR(50) NOT NULL
+- cost, power, life, counter_amount: INTEGER
+- card_text: TEXT (para textos largos)
+- market_price, inventory_price: DECIMAL(10,2)
+- imported_at: DATETIME NOT NULL
+
+Índices creados:
+- idx_cards_name: Búsqueda por nombre
+- idx_cards_set_id: Búsqueda por set
+- idx_cards_type: Filtrado por tipo
+- idx_cards_rarity: Filtrado por rareza
+
+--------------------------------------------------------------------------------
+
+CHANGELOG 002: create-colors-table.xml
+--------------------------------------
+Crea la tabla de COLORES e inserta los 6 oficiales.
+
+Tabla colors:
+- id: BIGINT AUTO_INCREMENT PRIMARY KEY
+- name: VARCHAR(50) UNIQUE NOT NULL
+
+Datos insertados:
+  INSERT INTO colors (name) VALUES ('Red');
+  INSERT INTO colors (name) VALUES ('Green');
+  INSERT INTO colors (name) VALUES ('Blue');
+  INSERT INTO colors (name) VALUES ('Yellow');
+  INSERT INTO colors (name) VALUES ('Purple');
+  INSERT INTO colors (name) VALUES ('Black');
+
+--------------------------------------------------------------------------------
+
+CHANGELOG 003: create-card-colors-table.xml
+-------------------------------------------
+Crea la tabla intermedia CARTA-COLOR (relación N:M).
+
+Tabla card_colors:
+- card_set_id: VARCHAR(50) FK → cards(card_set_id)
+- color_id: BIGINT FK → colors(id)
+- PRIMARY KEY (card_set_id, color_id)
+
+Características:
+- DELETE CASCADE: Si borras una carta, se borran sus colores
+- Índice en color_id para buscar cartas por color
+
+--------------------------------------------------------------------------------
+
+CHANGELOG 004: create-decks-table.xml
+-------------------------------------
+Crea la tabla de DECKS/MAZOS.
+
+Tabla decks:
+- id: BIGINT AUTO_INCREMENT PRIMARY KEY
+- name: VARCHAR(255) NOT NULL
+- description: VARCHAR(1000)
+- created_at: DATETIME NOT NULL
+- updated_at: DATETIME
+- total_cards: INTEGER NOT NULL
+
+Índice:
+- idx_decks_name: Búsqueda por nombre
+
+--------------------------------------------------------------------------------
+
+CHANGELOG 005: create-deck-cards-table.xml
+------------------------------------------
+Crea la tabla intermedia DECK-CARTA con copias.
+
+Tabla deck_cards:
+- id: BIGINT AUTO_INCREMENT PRIMARY KEY
+- deck_id: BIGINT FK → decks(id)
+- card_set_id: VARCHAR(50) FK → cards(card_set_id)
+- copies: INTEGER NOT NULL
+
+Restricciones:
+- UNIQUE (deck_id, card_set_id): No duplicar carta en deck
+- CHECK (copies >= 1 AND copies <= 4): Máximo 4 copias
+
+Índices:
+- idx_deck_cards_deck_id: Buscar cartas de un deck
+- idx_deck_cards_card_id: Buscar decks con una carta
+
+================================================================================
+
+¿CÓMO FUNCIONA EN SPRING BOOT?
+------------------------------
+1. Al arrancar la app, Spring detecta Liquibase
+2. Lee spring.liquibase.change-log en application.properties
+3. Ejecuta los changelogs en orden
+4. Crea la tabla DATABASECHANGELOG para trackear lo ejecutado
+5. En futuros arranques, solo ejecuta changelogs nuevos
+
+CONFIGURACIÓN (application.properties):
+  spring.liquibase.change-log=classpath:db/changelog/db.changelog-master.xml
+
+================================================================================

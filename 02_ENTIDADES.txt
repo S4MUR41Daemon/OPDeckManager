@@ -1,0 +1,109 @@
+================================================================================
+                         ENTIDADES DE DOMINIO
+                         (domain/entities/)
+================================================================================
+
+1. CARD (cards)
+---------------
+Propósito: Representa una carta del juego importada desde la API.
+
+Campos principales:
+- cardSetId (PK): Identificador único ej: "OP01-001"
+- name: Nombre de la carta ej: "Roronoa Zoro (001)"
+- type: Tipo ej: "Leader", "Character", "Event", "Stage"
+- cost: Coste en Don!! (integer)
+- power: Poder de ataque (integer)
+- life: Vida (solo Leaders)
+- counterAmount: Counter (solo Characters)
+- attribute: Atributo ej: "Slash", "Strike", "Shoot"
+- subTypes: Subtipos ej: "Straw Hat Crew, Supernovas"
+- cardText: Texto de habilidades
+- rarity: Rareza ej: "L", "LC", "R", "SR", "UR", "P"
+- setId: ID del set ej: "OP-01"
+- setName: Nombre del set ej: "Romance Dawn"
+- imageUrl: URL de la imagen
+- marketPrice: Precio de mercado (USD)
+- inventoryPrice: Precio de inventario (USD)
+- importedAt: Fecha de importación
+
+Relaciones:
+- @OneToMany → CardColor (colores de la carta)
+- @OneToMany → DeckCard (apariciones en decks)
+
+--------------------------------------------------------------------------------
+
+2. COLOR (colors)
+-----------------
+Propósito: Los 6 colores oficiales del juego.
+
+Campos:
+- id (PK): Identificador autoincremental
+- name: Nombre del color (unique)
+
+Colores válidos:
+- Red
+- Green
+- Blue
+- Yellow
+- Purple
+- Black
+
+Relaciones:
+- @OneToMany → CardColor
+
+--------------------------------------------------------------------------------
+
+3. CARD_COLOR (card_colors)
+---------------------------
+Propósito: Tabla intermedia para relación N:M entre Card y Color.
+           Una carta puede tener 1 o 2 colores.
+
+Campos:
+- id (PK compuesta): CardColorId
+  - cardSetId: FK a cards
+  - colorId: FK a colors
+
+Relaciones:
+- @ManyToOne → Card
+- @ManyToOne → Color
+
+--------------------------------------------------------------------------------
+
+4. DECK (decks)
+---------------
+Propósito: Un mazo creado por un usuario.
+
+Campos:
+- id (PK): Identificador autoincremental
+- name: Nombre del deck
+- description: Descripción opcional
+- createdAt: Fecha de creación
+- updatedAt: Fecha de última modificación
+- totalCards: Total de cartas (debe ser 60)
+
+Relaciones:
+- @OneToMany → DeckCard (cartas en el deck)
+
+--------------------------------------------------------------------------------
+
+5. DECK_CARD (deck_cards)
+-------------------------
+Propósito: Tabla intermedia deck-carta con cantidad de copias.
+           Regla: Máximo 4 copias de la misma carta en un deck.
+
+Campos:
+- id (PK): Identificador autoincremental
+- deckId: FK a decks
+- cardSetId: FK a cards
+- copies: Cantidad de copias (1-4)
+
+Validaciones:
+- @Min(1): Al menos 1 copia
+- @Max(4): Máximo 4 copias (regla oficial del juego)
+- Unique constraint: No duplicar carta en mismo deck
+
+Relaciones:
+- @ManyToOne → Deck
+- @ManyToOne → Card
+
+================================================================================

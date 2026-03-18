@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="001" author="dmaicas">
+        <comment>Tabla de cartas importadas desde la API de One Piece TCG</comment>
+        
+        <createTable tableName="cards">
+            <!-- Identificador único de la carta (card_set_id de la API) -->
+            <column name="card_set_id" type="varchar(50)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <!-- Nombre de la carta -->
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- Tipo de carta: Leader, Character, Event, Stage, Don -->
+            <column name="type" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- Coste de la carta (número de Don!! necesarios) -->
+            <column name="cost" type="integer"/>
+            
+            <!-- Poder de la carta -->
+            <column name="power" type="integer"/>
+            
+            <!-- Vida (solo para Leaders) -->
+            <column name="life" type="integer"/>
+            
+            <!-- Counter (solo para Characters) -->
+            <column name="counter_amount" type="integer"/>
+            
+            <!-- Atributo: Slash, Strike, Shoot, etc. -->
+            <column name="attribute" type="varchar(100)"/>
+            
+            <!-- Subtipos: Straw Hat Crew, Supernovas, etc. -->
+            <column name="sub_types" type="varchar(500)"/>
+            
+            <!-- Texto de habilidades de la carta -->
+            <column name="card_text" type="text"/>
+            
+            <!-- Rareza: L, LC, R, SR, UR, P -->
+            <column name="rarity" type="varchar(10)"/>
+            
+            <!-- Set al que pertenece: OP01, OP02, ST01, etc. -->
+            <column name="set_id" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- Nombre del set -->
+            <column name="set_name" type="varchar(255)"/>
+            
+            <!-- Número de la carta dentro del set -->
+            <column name="card_number" type="varchar(20)"/>
+            
+            <!-- URL de la imagen de la carta -->
+            <column name="image_url" type="varchar(500)"/>
+            
+            <!-- ID de la imagen -->
+            <column name="image_id" type="varchar(50)"/>
+            
+            <!-- Precio de mercado (USD) -->
+            <column name="market_price" type="decimal(10,2)"/>
+            
+            <!-- Precio de inventario (USD) -->
+            <column name="inventory_price" type="decimal(10,2)"/>
+            
+            <!-- Fecha de importación desde la API -->
+            <column name="imported_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <!-- Índices para búsquedas comunes -->
+        <createIndex tableName="cards" indexName="idx_cards_name">
+            <column name="name"/>
+        </createIndex>
+        
+        <createIndex tableName="cards" indexName="idx_cards_set_id">
+            <column name="set_id"/>
+        </createIndex>
+        
+        <createIndex tableName="cards" indexName="idx_cards_type">
+            <column name="type"/>
+        </createIndex>
+        
+        <createIndex tableName="cards" indexName="idx_cards_rarity">
+            <column name="rarity"/>
+        </createIndex>
+        
+    </changeSet>
+
+
+</databaseChangeLog>

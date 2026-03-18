@@ -1,0 +1,140 @@
+================================================================================
+                         REPOSITORIOS Y CONTROLADORES
+================================================================================
+
+REPOSITORIOS (repository/)
+==========================
+Interfaces que extienden JpaRepository<T, ID>.
+Spring Data JPA genera la implementación automáticamente.
+
+--------------------------------------------------------------------------------
+
+1. CardRepository.java
+----------------------
+Extiende: JpaRepository<Card, String>
+ID tipo: String (cardSetId)
+
+Métodos custom:
+- List<Card> findByIdIn(List<String> ids)     → WHERE cardSetId IN (...)
+- List<Card> findBySetId(String setId)        → WHERE setId = ?
+- List<Card> findByType(String type)          → WHERE type = ?
+- Optional<Card> findByName(String name)      → WHERE name = ?
+
+Uso:
+  List<Card> rojas = cardRepository.findByType("Leader");
+  Optional<Card> zoro = cardRepository.findByName("Roronoa Zoro (001)");
+
+--------------------------------------------------------------------------------
+
+2. ColorRepository.java
+-----------------------
+Extiende: JpaRepository<Color, Long>
+ID tipo: Long
+
+Métodos custom:
+- Optional<Color> findByName(String name)
+
+Uso:
+  Optional<Color> red = colorRepository.findByName("Red");
+
+--------------------------------------------------------------------------------
+
+3. DeckRepository.java
+----------------------
+Extiende: JpaRepository<Deck, Long>
+ID tipo: Long
+
+Métodos custom:
+- List<Deck> findByNameContaining(String name)  → WHERE name LIKE %?%
+
+Uso:
+  List<Deck> zoroDecks = deckRepository.findByNameContaining("Zoro");
+
+--------------------------------------------------------------------------------
+
+4. DeckCardRepository.java
+--------------------------
+Extiende: JpaRepository<DeckCard, Long>
+ID tipo: Long
+
+Métodos custom:
+- List<DeckCard> findByDeckId(Long deckId)        → Cartas de un deck
+- List<DeckCard> findByCardCardSetId(String id)   → Decks con una carta
+
+Uso:
+  List<DeckCard> cartas = deckCardRepository.findByDeckId(1L);
+
+================================================================================
+
+CONTROLADORES (controller/)
+===========================
+
+--------------------------------------------------------------------------------
+
+1. ImportController.java
+------------------------
+@RestController
+@RequestMapping("/api/import")
+@CrossOrigin(origins = "*")
+
+Endpoints:
+
+POST /api/import/all
+--------------------
+Propósito: Importar TODAS las cartas de la API.
+Respuesta: "Importación completada correctamente"
+Código: 200 OK | 500 Internal Server Error
+
+Ejemplo curl:
+  curl -X POST http://localhost:8080/api/import/all
+
+POST /api/import/set/{setId}
+----------------------------
+Propósito: Importar un set específico.
+Path variable: setId (ej: "OP01")
+Respuesta: "Set OP01 importado: 100 cartas"
+Código: 200 OK | 500 Internal Server Error
+
+Ejemplo curl:
+  curl -X POST http://localhost:8080/api/import/set/OP01
+
+--------------------------------------------------------------------------------
+
+PRÓXIMOS CONTROLADORES (SUGERIDOS)
+----------------------------------
+
+2. CardController.java (PENDIENTE)
+----------------------------------
+GET /api/cards                    → Listar todas las cartas
+GET /api/cards/{id}               → Obtener carta por ID
+GET /api/cards/search?name=zoro   → Buscar por nombre
+GET /api/cards/set/OP01           → Cartas de un set
+GET /api/cards/color/Red          → Cartas de un color
+GET /api/cards/type/Leader        → Cartas de un tipo
+
+3. DeckController.java (PENDIENTE)
+----------------------------------
+GET /api/decks                    → Listar todos los decks
+GET /api/decks/{id}               → Obtener deck con sus cartas
+POST /api/decks                   → Crear nuevo deck
+PUT /api/decks/{id}               → Actualizar deck
+DELETE /api/decks/{id}            → Eliminar deck
+POST /api/decks/{id}/cards        → Añadir carta al deck
+DELETE /api/decks/{id}/cards/{cardId} → Quitar carta del deck
+
+================================================================================
+
+DTOs (service/dto/)
+===================
+
+CardApiDTO.java
+---------------
+Único DTO actual. Mapea la respuesta JSON de la API externa.
+No se expone directamente en controllers, se convierte a entidad Card.
+
+Próximos DTOs sugeridos:
+- CardDTO: Para responses de API (ocultar campos internos)
+- DeckDTO: Para crear/listar decks
+- DeckCardDTO: Para añadir cartas a deck
+
+================================================================================
