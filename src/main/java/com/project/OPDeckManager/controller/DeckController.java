@@ -45,9 +45,13 @@ public class DeckController {
      * POST /api/decks - Creates a new deck.
      */
     @PostMapping
-    public ResponseEntity<DeckResponseDTO> createDeck(@Valid @RequestBody DeckRequestDTO request) {
-        DeckResponseDTO created = deckService.createDeck(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public ResponseEntity<?> createDeck(@Valid @RequestBody DeckRequestDTO request) {
+        try {
+            DeckResponseDTO created = deckService.createDeck(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
+        }
     }
 
     /**
@@ -78,12 +82,14 @@ public class DeckController {
      * POST /api/decks/{id}/cards - Adds cards to a deck.
      */
     @PostMapping("/{id}/cards")
-    public ResponseEntity<DeckResponseDTO> addCardsToDeck(
+    public ResponseEntity<?> addCardsToDeck(
             @PathVariable Long id,
             @Valid @RequestBody List<CardInDeckRequestDTO> cardsRequest) {
         try {
             DeckResponseDTO updated = deckService.addCardsToDeck(id, cardsRequest);
             return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

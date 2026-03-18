@@ -6,6 +6,7 @@ import com.project.OPDeckManager.domain.entities.DeckCard;
 import com.project.OPDeckManager.repository.CardRepository;
 import com.project.OPDeckManager.repository.DeckCardRepository;
 import com.project.OPDeckManager.repository.DeckRepository;
+import com.project.OPDeckManager.service.dto.CardInDeckRequestDTO;
 import com.project.OPDeckManager.service.dto.CardResponseDTO;
 import com.project.OPDeckManager.service.dto.DeckCardDTO;
 import com.project.OPDeckManager.service.dto.DeckRequestDTO;
@@ -108,11 +109,19 @@ public class DeckService {
         Deck deck = deckRepository.findById(deckId)
                 .orElseThrow(() -> new RuntimeException("Deck not found with id: " + deckId));
 
+        List<String> missingCards = cardsRequest.stream()
+                .map(CardInDeckRequestDTO::getCardSetId)
+                .filter(id -> !cardRepository.existsById(id))
+                .collect(Collectors.toList());
+
+        if (!missingCards.isEmpty()) {
+            throw new IllegalArgumentException("Cards not found in database: " + String.join(", ", missingCards));
+        }
+
         int totalCards = 0;
 
         for (com.project.OPDeckManager.service.dto.CardInDeckRequestDTO cardRequest : cardsRequest) {
-            Card card = cardRepository.findById(cardRequest.getCardSetId())
-                    .orElseThrow(() -> new RuntimeException("Card not found: " + cardRequest.getCardSetId()));
+            Card card = cardRepository.findById(cardRequest.getCardSetId()).orElseThrow();
 
             DeckCard deckCard = new DeckCard();
             deckCard.setDeck(deck);

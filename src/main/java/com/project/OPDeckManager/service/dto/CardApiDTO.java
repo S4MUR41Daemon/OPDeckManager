@@ -3,71 +3,60 @@ package com.project.OPDeckManager.service.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.util.List;
+
 /**
- * DTO para mapear la respuesta de la API de One Piece TCG
- * Endpoint: https://optcg-api.ryanmichaelhirst.us/api/v1/cards
- * 
- * Nueva estructura de la API (2026):
- * - id: identificador único
- * - code: código de la carta (ej. EB01-001)
- * - rarity: rareza (L, SR, R, C, etc.)
- * - type: tipo (LEADER, CHARACTER, EVENT, STAGE)
- * - name: nombre
- * - cost: coste
- * - attribute: atributo (Slash, Ranged, Strike, Special)
- * - power: poder
- * - counter: counter
- * - color: color (ej. "Red/Green")
- * - class: clase/subtipo
- * - effect: texto de la carta
- * - set: nombre del set
- * - image: URL de la imagen
+ * DTO para mapear las cartas del JSON de GitHub:
+ * https://raw.githubusercontent.com/nemesis312/OnePieceTCGEngCardList/main/CardDb3.json
+ *
+ * Campos del JSON: CardNum, Rarity, CardType, Name, Img, Cost, Attribute,
+ * Power, Counter, Color, Block, Type, Effect, CardSets, Images
  */
 @Data
 public class CardApiDTO {
 
-    @JsonProperty("id")
-    private String id;
+    @JsonProperty("CardNum")
+    private String cardNum;
 
-    @JsonProperty("code")
-    private String code;
-
-    @JsonProperty("rarity")
+    @JsonProperty("Rarity")
     private String rarity;
 
-    @JsonProperty("type")
-    private String type;
+    @JsonProperty("CardType")
+    private String cardType;
 
-    @JsonProperty("name")
+    @JsonProperty("Name")
     private String name;
 
-    @JsonProperty("cost")
-    private Integer cost;
+    @JsonProperty("Img")
+    private String img;
 
-    @JsonProperty("attribute")
+    @JsonProperty("Cost")
+    private String cost;
+
+    @JsonProperty("Attribute")
     private String attribute;
 
-    @JsonProperty("power")
-    private Integer power;
+    @JsonProperty("Power")
+    private String power;
 
-    @JsonProperty("counter")
-    private Integer counter;
+    @JsonProperty("Counter")
+    private String counter;
 
-    @JsonProperty("color")
+    @JsonProperty("Color")
     private String color;
 
-    @JsonProperty("class")
-    private String cardClass;
+    @JsonProperty("Block")
+    private String block;
 
-    @JsonProperty("effect")
+    @JsonProperty("Type")
+    private String type;
+
+    @JsonProperty("Effect")
     private String effect;
 
-    @JsonProperty("set")
-    private String setName;
+    @JsonProperty("CardSets")
+    private String cardSets;
 
-    @JsonProperty("image")
-    private String imageUrl;
-
-    @JsonProperty("_tag")
-    private String tag;
+    @JsonProperty("Images")
+    private List<String> images;
 }
