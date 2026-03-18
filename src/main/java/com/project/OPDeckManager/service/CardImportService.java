@@ -19,6 +19,12 @@ import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * Class used to import cards from the API and to save them in the database. It fetches the cards from the API,
+ * maps them to the Card entity and saves them in the database.
+ *
+ * @author dmaicas
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
