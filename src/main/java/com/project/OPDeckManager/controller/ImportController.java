@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/import")
 @RequiredArgsConstructor
@@ -18,13 +20,23 @@ public class ImportController {
      * POST /api/import/all
      */
     @PostMapping("/all")
-    public ResponseEntity<String> importAllCards() {
+    public ResponseEntity<Map<String, Object>> importAllCards() {
         try {
+            long startTime = System.currentTimeMillis();
             cardImportService.importAllCards();
-            return ResponseEntity.ok("Importación completada correctamente");
+            long endTime = System.currentTimeMillis();
+
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Importación completada correctamente",
+                "duration_seconds", (endTime - startTime) / 1000
+            ));
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
-                .body("Error durante la importación: " + e.getMessage());
+                .body(Map.of(
+                    "status", "error",
+                    "message", "Error durante la importación: " + e.getMessage()
+                ));
         }
     }
 }
